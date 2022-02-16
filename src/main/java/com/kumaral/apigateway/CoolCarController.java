@@ -1,6 +1,8 @@
 package com.kumaral.apigateway;
 
+import com.netflix.hystrix.contrib.javanica.annotation.DefaultProperties;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
+import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
@@ -18,6 +20,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@DefaultProperties(
+        commandProperties = {
+                @HystrixProperty(
+                        name = "execution.isolation.thread.timeoutInMilliseconds",
+                        value = "12000")})
 @RestController
 @RequestMapping("gateway")
 public class CoolCarController {
@@ -32,7 +39,13 @@ public class CoolCarController {
 
     @GetMapping("/cool-cars")
     @CrossOrigin
-    @HystrixCommand(fallbackMethod = "fallback")
+    @HystrixCommand(fallbackMethod = "fallback",
+            commandProperties =
+                    { @HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "12000")},
+            threadPoolKey = "nameOfThreadPoolKey",
+            threadPoolProperties =
+                    { @HystrixProperty(name = "coreSize", value = "30"),
+                            @HystrixProperty(name = "maxQueueSize", value = "10")})
     public Collection<Car> goodCars() {
         System.out.println(carClient);
         return carClient.readCars()
